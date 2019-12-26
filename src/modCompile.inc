@@ -166,47 +166,104 @@ end function
 
 ''
 ''
-private FUNCTION CreateChildProcess( byref zCmdLine AS wstring, _
-                                     byref zParams  AS wstring, _
-                                     byval hChildStdOutWrite AS HANDLE _
-                                     ) AS BOOLEAN
+private function AlternateCompile( byref wszExe AS wstring, _
+                                   byref wszCmdLine AS wstring, _
+                                   byref sConsoleText AS string _
+                                   ) as long
+
+   Dim ShExecInfo As SHELLEXECUTEINFOW  
+
+   ' Create a temporary batch that will contain the compile commands. We shell
+   ' to and run this batch file in order to do the compile.
+   ' Replace any embedded spaces with underscores
+   dim as CWSTR wDQ = wchr(34)
+   dim as CWSTR wszBatchFile = "_winfbe_compile.bat"
+   dim as CWSTR wszLogFile   = "_winfbe_compile.log"
+   
+   ' Change to the output code directory
+   'ChDir gCompile.MainFolder
+   
+   ' Must delete any previous instance of the compiler log file in case it was not deleted. Need
+   ' to do this because the compiler appends to the log file rather than overwriting.
+   if AfxFileExists(wszLogFile) then AfxDeleteFile(wszLogFile)
+   
+   dim as long f = Freefile
+   Open wszBatchFile For Output as #f
+   print #f, wDQ & wszEXE & wDQ & " " & wszCmdLine;
+   Print #f, " >> "; wszLogFile; " 2>&1"   ' ensure stderr is redirected (appended) to log file as well
+   close #f
+   
+   dim as CWSTR wszShellExe = Environ("COMSPEC")
+   dim as CWSTR wszShellParam   = " /C " & wszBatchFile
+
+   With ShExecInfo
+      .cbSize       = Len(SHELLEXECUTEINFOW)
+      .fMask        = SEE_MASK_NOCLOSEPROCESS
+      .HWnd         = 0
+      .lpVerb       = Null
+      .lpFile       = wszShellExe.sptr
+      .lpParameters = wszShellParam.sptr   
+      .lpDirectory  = 0
+      .nShow        = SW_HIDE
+      .hInstApp     = 0 
+   End With
+
+   ' Shell to the compiler 
+   ShellExecuteEx( @ShExecInfo )
     
-   dim ProcessInfo AS PROCESS_INFORMATION
-   dim StartupInf  AS STARTUPINFO
+   ' Give the process 33 ms (you can use a different value here depending on 
+   ' how responsive you wish your app to be)
+   Dim uMsg As MSG
+   while WaitForSingleObject(ShExecInfo.hProcess, 33) = WAIT_TIMEOUT
+   '  if after 33 ms the object's handle is not signaled..       
+   '  we examine the message queue and if there are any waiting..
+   '  Note:  see PeekMessage documentation for details on how to limit
+   '         the types of messages to look for
+      while(PeekMessage(@uMsg, HWND_FRMMAIN,  0, 0, PM_NOREMOVE))
+        ' we process them..
+        if(GetMessage(@uMsg, NULL, 0, 0) > 0) then
+            TranslateMessage(@uMsg)
+            DispatchMessage(@uMsg)
+         end if
+      wend
+   wend
+   
+   ' Get the log file contents into a string in order to parse it for errors, etc
+   If AfxFileExists(wszLogFile) Then
+      f = Freefile
+      Open wszLogFile For binary as #f
+      sConsoleText = string(lof(f), 0)
+      Get #f, , sConsoleText
+      Close #f
+   End If   
 
-   StartupInf.cb         = SIZEOF(STARTUPINFO)
-   StartupInf.hStdError  = hChildStdOutWrite   
-   StartupInf.hStdOutput = hChildStdOutWrite  
-   StartupInf.dwFlags    = STARTF_USESTDHANDLES
+? "--sConsoleText--"
+? sConsoleText
 
-   IF CreateProcess( zCmdLine,  _    ' Create the child process.
-                     zParams, _      ' Command line
-                     BYVAL 0,     _  ' Process security attributes
-                     BYVAL 0,     _  ' Primary thread security attributes
-                     TRUE,        _  ' Handles are inherited
-                     CREATE_NO_WINDOW, _  ' Creation flags  
-                     BYVAL 0,     _  ' Use parent's environment
-                     BYVAL 0,     _  ' Use parent's current directory
-                     @StartupInf,  _  ' STARTUPINFO pointer
-                     @ProcessInfo) = FALSE THEN
-   ELSE
-      ' Close handles to the child process and its primary thread.
-      ' Some applications might keep these handles to monitor the status 
-      ' of the child process, for example.
-      CloseHandle( ProcessInfo.hProcess )
-      CloseHandle( ProcessInfo.hThread )
-      FUNCTION = TRUE
- END IF
-END FUNCTION
+'   if AfxFileExists(wszBatchFile) then AfxDeleteFile(wszBatchFile)
+'   if AfxFileExists(wszLogFile) then AfxDeleteFile(wszLogFile)
+
+   function = 0
+end function
 
 
 ''
 ''
-private function RedirConsoleToFile( byref szExe AS wstring, _
-                                     byref szCmdLine AS wstring, _
+private function RedirConsoleToFile( byref wszExe AS wstring, _
+                                     byref wszCmdLine AS wstring, _
                                      byref sConsoleText AS string _
                                      ) as long
 
+   ' It appears that CreateProcess will fail if szExe is wrapped in quotes or if
+   ' it contains spaces in the filename. Use the older Batch file method instead.
+   ' This means that the WinFBE installation and the location of the gcc tools should not
+   ' have any embedded spaces in their folder paths. 
+   if instr(wszExe, " ") then
+      AlternateCompile( wszExe, wszCmdLine, sConsoleText )
+      return 0
+   end if   
+
+   ' Continue on with the newer CreateProcess compile approach.
    dim SecurityAttribute AS SECURITY_ATTRIBUTES
    dim hChildStdOutRead  AS PHANDLE
    dim hChildStdOutWrite AS PHANDLE
@@ -220,32 +277,84 @@ private function RedirConsoleToFile( byref szExe AS wstring, _
 
    ' Create a pipe for the child process's STDOUT.
    IF CreatePipe(@hChildStdOutRead, @hChildStdOutWrite, @SecurityAttribute, BYVAL 0) = FALSE THEN
-      '? "error creating pipe"
+      ? "error creating pipe"
    ELSE
       ' Ensure the read handle to the pipe for STDOUT is not inherited.
       IF SetHandleInformation(hChildStdOutRead, HANDLE_FLAG_INHERIT, BYVAL 0) = FALSE THEN
-         '? "error SetHandleInformation"
+         ? "error SetHandleInformation"
       ELSE
          ' Create the child process and read from its standard output
-         IF CreateChildProcess(szExe, szCmdLine, hChildStdOutWrite) THEN
+         dim ProcessInfo AS PROCESS_INFORMATION
+         dim StartupInf  AS STARTUPINFO
+
+         StartupInf.cb         = SIZEOF(STARTUPINFO)
+         StartupInf.hStdError  = hChildStdOutWrite   
+         StartupInf.hStdOutput = hChildStdOutWrite  
+         StartupInf.dwFlags    = STARTF_USESTDHANDLES
+
+         dim wszFullExe as wstring * 32767
+         
+         if instr(wszExe, " ") then
+            wszFullExe = wchr(34) & wszExe & wchr(34)
+         else
+            wszFullExe = wszExe 
+         end if
+         
+' This call to CreateProcessW will succeed in all cases except for the one
+' where there is spaces in wszFullExe because once I wrap the string in double
+' quotes then the call to CreateProcessW fails.
+
+         dim errCode as long 
+         errCode = CreateProcessW( wszFullExe,  _    ' Create the child process.
+                     wszCmdLine, _       ' Command line
+                     BYVAL 0,     _  ' Process security attributes
+                     BYVAL 0,     _  ' Primary thread security attributes
+                     TRUE,        _  ' Handles are inherited
+                     CREATE_NO_WINDOW, _  ' Creation flags  
+                     BYVAL 0,     _  ' Use parent's environment
+                     BYVAL 0,     _  ' Use parent's current directory
+                     @StartupInf,  _  ' STARTUPINFO pointer
+                     @ProcessInfo) 
+         
+         'if errCode = 0 then
+         '   ? wszFullExe
+         '   ? wszCmdLine
+         '   ? "CreateProcess FAILED errCode: "; errCode, "GetLastError: "; GetLastError()
+         '   'ERROR_INVALID_NAME
+         '   '    123 (0x7B)
+         '   '    The filename, directory name, or volume label syntax is incorrect.
+         'end if
+
+
+         if errCode <> 0 then            
+
             CloseHandle(hChildStdOutWrite) ' To avoid ReadFile hanging at the end.
             DO
                IF ReadFile(hChildStdOutRead, BYVAL VARPTR(sBuffer), 4096, @dwReadBytes, BYVAL 0) = FALSE THEN 
-                  '? "ERROR ReadFile. hChildStdOutRead=";hChildStdOutRead, "dwReadBytes=";dwReadBytes
+                  '? "ERROR ReadFile. hChildStdOutRead=";hChildStdOutRead
                   '? "GetLastError: "; GetLastError
                   EXIT DO
                end if  
-               '? "READ " & dwReadBytes & " BYTES=" & LEFT(sBuffer, dwReadBytes)
-               '? LEFT(sBuffer, dwReadBytes)
                sConsoleText = sConsoleText & LEFT(sBuffer, dwReadBytes)
                '(at this stage we could SAVE the buffer that we've read from the child to a file, but 
                ' thats an extra ReadFile+WriteFile compared to the direct-to-hFile method)
             LOOP
+            
          else
             '? "CreateChildProcess failed"      
+            if instr( wszFullExe, " " ) then
+               AfxMsg( "CreateChildProcess failed. Install WinFBE into folder without spaces." )
+            end if    
+            ' Close handles to the child process and its primary thread.
+            ' Some applications might keep these handles to monitor the status 
+            ' of the child process, for example.
+            CloseHandle( ProcessInfo.hProcess )
+            CloseHandle( ProcessInfo.hThread )
          END IF
+         
       END IF
    END IF
+
    function = 0
 END function
 
@@ -612,12 +721,12 @@ private function ParseLogForError( byref wsLogSt as CWSTR, _
    
    ' In all cases where warnings and/or errors exist, we will show the Compiler Results listview
    If (NumWarnings > 0) orelse (NumErrors > 0) orelse (NumDirectives > 0) then
-
+   
       cwsCompileMsg = L(193, "Errors")   & " " & NumErrors   & "  " & _
                       L(192, "Warnings") & " " & NumWarnings & _
                       "  [" & _
-                        AfxSystemTimeToDateStr( gCompile.SystemTime, "yyyy-MM-dd" ) & " " & _
-                        AfxSystemTimeToTimeStr( gCompile.SystemTime, "hh:mm:ss" ) & "]"
+                        AfxLocalDateStr( "yyyy-MM-dd" ) & "  " & _
+                        AfxLocalTimeStr( "hh:mm:ss" ) & "]"
       gCompile.wszOutputMsg = L(229,"Failed Compile")  & " (" & cwsCompileMsg & ")" & vbcrlf
       SetCompileStatusBarMessage( cwsCompileMsg, ghIconBad )
       MessageBeep(MB_ICONWARNING)
@@ -714,7 +823,7 @@ public Function code_Compile( ByVal wID As Long ) As BOOLEAN
    dim wszParams    as CWSTR
    dim sConsoleText as string 
     
-   Dim As CWSTR wexecmd, wDQ, wsLogSt, wst
+   Dim As CWSTR wExeCmd, wDQ, wsLogSt, wst
          
    Dim As BOOLEAN fCompile32, fCompile64
    
@@ -722,6 +831,10 @@ public Function code_Compile( ByVal wID As Long ) As BOOLEAN
    
    wDQ = wchr(34) ' unicode double quotes
                              
+   ' Reload the config file in case a user has automated a change to it since
+   ' the application started (for example, changing the compiler path).
+   gConfig.LoadConfigFile()
+   
    gCompile.wszFullCommandLine = ""
    gCompile.wszFullLogFile = ""
    gCompile.wszOutputMsg = ""
@@ -730,7 +843,7 @@ public Function code_Compile( ByVal wID As Long ) As BOOLEAN
    ' is not dirty and needs to be saved.
    if wID <> IDM_QUICKRUN THEN
       If gConfig.CompileAutosave Then
-         ' If there any "New" files that have not been edited yet causing thm to show 
+         ' If there any "New" files that have not been edited yet causing them to show 
          ' as dirty then we will mark them now so that the FileSaveAll command will
          ' ask to save it (otherwise a compile error will show).
          dim pDoc as clsDocument ptr = gApp.pDocList
@@ -767,6 +880,7 @@ public Function code_Compile( ByVal wID As Long ) As BOOLEAN
    if AfxPathIsRelative(gCompile.CompilerPath) then
       gCompile.CompilerPath = AfxPathCombine(AfxGetExePathName, gCompile.CompilerPath)
    END IF
+
 
    ' Check to see if the compiler exists
    If AfxFileExists(gCompile.CompilerPath) = 0 Then 
@@ -940,13 +1054,13 @@ public Function code_Compile( ByVal wID As Long ) As BOOLEAN
    ' Need to determine the output filename in order to search for any existing
    ' running process.
    gCompile.OutputFilename = gCompile.MainFolder & gCompile.MainName & wstr(".exe")
-   If Instr(Ucase(gCompile.CompileFlags), wstr(" -DLL")) Then
+   If Instr(" " & Ucase(gCompile.CompileFlags), wstr(" -DLL")) Then
       gCompile.OutputFilename = gCompile.MainFolder & gCompile.MainName & wstr(".dll")
    End If
-   If Instr(Ucase(gCompile.CompileFlags), wstr(" -DYLIB")) Then
+   If Instr(" " & Ucase(gCompile.CompileFlags), wstr(" -DYLIB")) Then
       gCompile.OutputFilename = gCompile.MainFolder & gCompile.MainName & wstr(".dll")
    End If
-   If Instr(Ucase(gCompile.CompileFlags), wstr(" -LIB")) Then
+   If Instr(" " & Ucase(gCompile.CompileFlags), wstr(" -LIB")) Then
       gCompile.OutputFilename = gCompile.MainFolder & wstr("lib") & gCompile.MainName & wstr(".a")
    End If
 
@@ -1046,20 +1160,97 @@ public Function code_Compile( ByVal wID As Long ) As BOOLEAN
 
    AfxDoEvents
    
+   
+   ' If this is a visual designer project then output specific equates that dictate
+   ' which controls get compiled into the file source.
+   dim as CWSTR wszVDEquates, wszCtrlEquate
+   dim as boolean bIsVisual = false
+   pDoc = gApp.pDocList
+   do until pDoc = 0
+      if pDoc->IsDesigner then 
+         bIsVisual = true
+         ' Search all of the controls and set the appropriate equate
+         dim pCtrl as clsControl ptr
+         for i as long = pDoc->Controls.ItemFirst to pDoc->Controls.ItemLast
+            pCtrl = pDoc->Controls.ItemAt(i)
+            wszCtrlEquate = "#define CODEGEN_" & ucase(GetToolBoxName( pCtrl->ControlType ))
+            if instr(wszVDEquates, wszCtrlEquate) = 0 then
+               wszVDEquates = wszVDEquates & wszCtrlEquate & vbcrlf
+               ' If adding a RichEdit control reference then we also need to add
+               ' TextBox reference because a RichEdit extends a TextBox.
+               if pCtrl->ControlType = CTRL_RICHEDIT then
+                  wszCtrlEquate = "#define CODEGEN_TEXTBOX"
+                  if instr(wszVDEquates, wszCtrlEquate) = 0 then
+                     wszVDEquates = wszVDEquates & wszCtrlEquate & vbcrlf
+                  end if
+               end if
+            end if
+         NEXT
+
+         if pDoc->MainMenuExists then
+            wszCtrlEquate = "#define CODEGEN_MAINMENU"
+            if instr(wszVDEquates, wszCtrlEquate) = 0 then
+               wszVDEquates = wszVDEquates & wszCtrlEquate & vbcrlf
+            end if
+         end if
+         if pDoc->ToolBarExists then
+            wszCtrlEquate = "#define CODEGEN_TOOLBAR"
+            if instr(wszVDEquates, wszCtrlEquate) = 0 then
+               wszVDEquates = wszVDEquates & wszCtrlEquate & vbcrlf
+            end if
+         end if
+         if pDoc->StatusBarExists then
+            wszCtrlEquate = "#define CODEGEN_STATUSBAR"
+            if instr(wszVDEquates, wszCtrlEquate) = 0 then
+               wszVDEquates = wszVDEquates & wszCtrlEquate & vbcrlf
+            end if
+         end if
+      end if
+      pDoc = pDoc->pDocNext
+   loop
+
+   if bIsVisual then
+      dim wszVDMain as CWSTR = gCompile.MainFolder & "WinFBE_VD_MAIN.bas"
+      dim pStream as CTextStream
+      if pStream.Create(wszVDMain, true, true) = S_OK then 
+         dim as CWSTR wszText = _
+            wszVDEquates & _
+            "#Include Once " & wDQ & gCompile.MainFilename & wDQ
+         pStream.WriteLine wszText
+         pStream.Close
+         gCompile.MainFilename = wszVDMain
+      end if
+   end if
+   
+
    ' Compile the Main file. If this is a project then we also need to link
    ' in all of the *.o object files.
+   ' Per fxm post https://www.freebasic.net/forum/viewtopic.php?f=8&p=266126#p266126
+   ' Do not specify file extension with -m parameter, and also include the file
+   ' a second time in the list of files but include the extension at that time.
+   'dim as CWSTR wszMfile = wDQ + gCompile.MainFilename + wDQ
+   'dim as CWSTR wszMfile = wDQ + AfxStrPathName("PATH", gCompile.MainFilename) + AfxStrPathName("NAME", gCompile.MainFilename) + wDQ
+   'wszParams = "-m " + wszMfile + " " + wDQ + gCompile.MainFilename + wDQ 
    wszParams = "-m " + wDQ + gCompile.MainFilename + wDQ 
+
 
    ' Determine if we need to generate a temporary Resource file to hold any
    ' necessary for visual designer forms/projects where image references need to be outputted.
    if CreateTempResourceFile() then
       wszParams = wszParams + " " + wDQ + gCompile.TempResourceFile + wDQ
-   else   
-      wszParams = wszParams + " " + wDQ + gCompile.ResourceFile + wDQ
+   else
+      if len(gCompile.ResourceFile) then  
+         wszParams = wszParams + " " + wDQ + gCompile.ResourceFile + wDQ
+      end if   
    end if   
 
+   
    ' Ensure verbose compiler message output
    wszParams = wszParams + " -v " + gCompile.CompileFlags 
+   
+   if instr(wszParams, " -x ") = 0 then
+      wszParams = wszParams + " -x " + wDQ + gCompile.OutputFilename + wDQ
+   end if
    
    If gApp.IsProjectActive Then
       pDoc = gApp.pDocList

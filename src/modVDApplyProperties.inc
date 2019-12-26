@@ -13,6 +13,7 @@
 
 #include once "modVDApplyProperties.bi"
 #include once "modVDDesignForm.bi"
+#include once "frmVDTabChild.bi"
 
 
 ' ========================================================================================
@@ -32,14 +33,23 @@ private function Form_ApplyProperties( byval pDoc as clsDocument ptr, _
    wszPropValue = pProp->wszPropValue
    nPropValue   = Val(pProp->wszPropValue)
    
+   ' Determine if this is a regular form or a ChildForm
+   dim as Boolean bIsChildForm = iif( GetControlProperty( pCtrl, "CHILDFORM" ) = "True", True, false)
+
    select CASE ucase(wszPropName)
 
    case "BACKCOLOR"
       pWindow->Brush = CreateSolidBrush( GetRGBColorFromProperty(pProp) )
       AfxRedrawWindow(pCtrl->hWindow)
    
+   case "CHILDFORM"
+      Form_ApplyProperties(pDoc, pCtrl, GetControlPropertyPtr(pCtrl, "CONTROLBOX"))
+      Form_ApplyProperties(pDoc, pCtrl, GetControlPropertyPtr(pCtrl, "MAXIMIZEBOX"))
+      Form_ApplyProperties(pDoc, pCtrl, GetControlPropertyPtr(pCtrl, "MINIMIZEBOX"))
+      Form_ApplyProperties(pDoc, pCtrl, GetControlPropertyPtr(pCtrl, "BORDERSTYLE"))
+      
    case "CONTROLBOX"
-      if wszPropValue = "True" then
+      if (wszPropValue = "True") andalso (bIsChildForm = false) then
          AfxAddWindowStyle(pCtrl->hWindow, WS_SYSMENU)
       else
          AfxRemoveWindowStyle(pCtrl->hWindow, WS_SYSMENU)
@@ -55,7 +65,7 @@ private function Form_ApplyProperties( byval pDoc as clsDocument ptr, _
       AfxRedrawNonClientArea(pCtrl->hWindow) 
       
    case "MAXIMIZEBOX"
-      if wszPropValue = "True" then
+      if (wszPropValue = "True") andalso (bIsChildForm = false) then
          AfxAddWindowStyle(pCtrl->hWindow, WS_MAXIMIZEBOX)
       else
          AfxRemoveWindowStyle(pCtrl->hWindow, WS_MAXIMIZEBOX)
@@ -63,7 +73,7 @@ private function Form_ApplyProperties( byval pDoc as clsDocument ptr, _
       AfxRedrawNonClientArea(pCtrl->hWindow) 
 
    case "MINIMIZEBOX"
-      if wszPropValue = "True" then
+      if (wszPropValue = "True") andalso (bIsChildForm = false) then
          AfxAddWindowStyle(pCtrl->hWindow, WS_MINIMIZEBOX)
       else
          AfxRemoveWindowStyle(pCtrl->hWindow, WS_MINIMIZEBOX)
@@ -73,42 +83,45 @@ private function Form_ApplyProperties( byval pDoc as clsDocument ptr, _
    case "BORDERSTYLE"
       ' Remove all existing styles before adding the new style
       AfxRemoveWindowStyle(pCtrl->hWindow, WS_BORDER)
+      AfxRemoveWindowStyle(pCtrl->hWindow, WS_DLGFRAME)
       AfxRemoveWindowStyle(pCtrl->hWindow, WS_THICKFRAME)
       AfxRemoveWindowExStyle(pCtrl->hWindow, WS_EX_TOOLWINDOW)
       AfxRemoveWindowExStyle(pCtrl->hWindow, WS_EX_CLIENTEDGE)
       AfxRemoveWindowExStyle(pCtrl->hWindow, WS_EX_WINDOWEDGE)
       AfxRemoveWindowExStyle(pCtrl->hWindow, WS_EX_DLGMODALFRAME)
       
-      select case **wszPropValue
-         case "FormBorderStyle.None"
-            AfxRemoveWindowStyle(pCtrl->hWindow, WS_CAPTION)
-         case "FormBorderStyle.SizableToolWindow"
-            AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
-            AfxAddWindowStyle(pCtrl->hWindow, WS_THICKFRAME)
-            AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_TOOLWINDOW)
-         case "FormBorderStyle.FixedToolWindow"
-            AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
-            AfxAddWindowStyle(pCtrl->hWindow, WS_DLGFRAME)
-            AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_TOOLWINDOW)
-         case "FormBorderStyle.Sizable"
-            AfxAddWindowStyle(pCtrl->hWindow, WS_THICKFRAME)
-            AfxAddWindowStyle(pCtrl->hWindow, WS_DLGFRAME)
-            AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
-            AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_WINDOWEDGE)
-         case "FormBorderStyle.Fixed3D"
-            AfxAddWindowStyle(pCtrl->hWindow, WS_DLGFRAME)
-            AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
-            AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_WINDOWEDGE)
-            AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_CLIENTEDGE)
-         case "FormBorderStyle.FixedSingle"
-            AfxAddWindowStyle(pCtrl->hWindow, WS_DLGFRAME)
-            AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
-            AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_WINDOWEDGE)
-         case "FormBorderStyle.FixedDialog"
-            AfxAddWindowStyle(pCtrl->hWindow, WS_DLGFRAME)
-            AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
-            AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_DLGMODALFRAME)
-      end select     
+      if bIsChildForm = false then
+         select case **wszPropValue
+            case "FormBorderStyle.None"
+               AfxRemoveWindowStyle(pCtrl->hWindow, WS_CAPTION)
+            case "FormBorderStyle.SizableToolWindow"
+               AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
+               AfxAddWindowStyle(pCtrl->hWindow, WS_THICKFRAME)
+               AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_TOOLWINDOW)
+            case "FormBorderStyle.FixedToolWindow"
+               AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
+               AfxAddWindowStyle(pCtrl->hWindow, WS_DLGFRAME)
+               AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_TOOLWINDOW)
+            case "FormBorderStyle.Sizable"
+               AfxAddWindowStyle(pCtrl->hWindow, WS_THICKFRAME)
+               AfxAddWindowStyle(pCtrl->hWindow, WS_DLGFRAME)
+               AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
+               AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_WINDOWEDGE)
+            case "FormBorderStyle.Fixed3D"
+               AfxAddWindowStyle(pCtrl->hWindow, WS_DLGFRAME)
+               AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
+               AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_WINDOWEDGE)
+               AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_CLIENTEDGE)
+            case "FormBorderStyle.FixedSingle"
+               AfxAddWindowStyle(pCtrl->hWindow, WS_DLGFRAME)
+               AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
+               AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_WINDOWEDGE)
+            case "FormBorderStyle.FixedDialog"
+               AfxAddWindowStyle(pCtrl->hWindow, WS_DLGFRAME)
+               AfxAddWindowStyle(pCtrl->hWindow, WS_BORDER)
+               AfxAddWindowExStyle(pCtrl->hWindow, WS_EX_DLGMODALFRAME)
+         end select     
+      end if
       AfxRedrawNonClientArea(pCtrl->hWindow) 
 
    end select
@@ -753,9 +766,249 @@ private function PictureBox_ApplyProperties( byval pDoc as clsDocument ptr, _
    case "BACKCOLOR"
       pCtrl->AfxPicturePtr->SetBkColor( GetRGBColorFromProperty(pProp), true )
 
-   case "BACKCOLOR"
+   case "BACKCOLORHOT"
       pCtrl->AfxPicturePtr->SetBkColorHot( GetRGBColorFromProperty(pProp), true )
 
+   end select
+   
+   function = 0
+end function
+
+
+' ========================================================================================
+' Apply properties to the ProgressBar
+' ========================================================================================
+private function ProgressBar_ApplyProperties( byval pDoc as clsDocument ptr, _
+                                              byval pCtrl as clsControl ptr, _
+                                              byval pProp as clsProperty ptr _ 
+                                              ) as Long
+    
+   Dim pWindow As CWindow Ptr = AfxCWindowPtr(pDoc->hWndForm)
+
+   dim as long nPropValue
+   dim as CWSTR wszPropName, wszPropValue
+
+   wszPropName  = pProp->wszPropName
+   wszPropValue = pProp->wszPropValue
+   nPropValue   = Val(pProp->wszPropValue)
+   
+   select CASE ucase(wszPropName)
+      
+   case "MAXIMUM"
+      if nPropValue >= 0 then
+         dim as long nMinimum = ProgressBar_GetMinRange( pCtrl->hWindow )
+         ProgressBar_SetRange32( pCtrl->hWindow, nMinimum, nPropValue )
+      end if
+   
+   case "MINIMUM"
+      if nPropValue >= 0 then
+         dim as long nMaximum = ProgressBar_GetMaxRange( pCtrl->hWindow )
+         ProgressBar_SetRange32( pCtrl->hWindow, nPropValue, nMaximum )
+      end if
+      
+   case "VALUE"
+      if nPropValue >= 0 then
+         ProgressBar_SetPos( pCtrl->hWindow, nPropValue )
+      end if
+      
+   case "VERTICAL"
+      if wszPropValue = "True" then
+         AfxAddWindowStyle(pCtrl->hWindow, PBS_VERTICAL)
+      else
+         AfxRemoveWindowStyle(pCtrl->hWindow, PBS_VERTICAL)
+      end if
+      AfxRedrawWindow(pCtrl->hWindow) 
+         
+   end select
+   
+   function = 0
+end function
+
+
+' ========================================================================================
+' Apply properties to the Listview
+' ========================================================================================
+private function ListView_ApplyProperties( byval pDoc as clsDocument ptr, _
+                                           byval pCtrl as clsControl ptr, _
+                                           byval pProp as clsProperty ptr _ 
+                                           ) as Long
+    
+   Dim pWindow As CWindow Ptr = AfxCWindowPtr(pDoc->hWndForm)
+
+   dim as long nPropValue
+   dim as CWSTR wszPropName, wszPropValue
+
+   wszPropName  = pProp->wszPropName
+   wszPropValue = pProp->wszPropValue
+   nPropValue   = Val(pProp->wszPropValue)
+   
+   select CASE ucase(wszPropName)
+      
+   case "BACKCOLOR"
+   case "CHECKBOXES"
+   case "GRIDLINES"
+   CASE "FULLROWSELECT"
+   CASE "HIDESELECTION"   
+         
+   end select
+   
+   function = 0
+end function
+
+
+' ========================================================================================
+' Apply properties to the MonthCalendar
+' ========================================================================================
+private function MonthCalendar_ApplyProperties( byval pDoc as clsDocument ptr, _
+                                                byval pCtrl as clsControl ptr, _
+                                                byval pProp as clsProperty ptr _ 
+                                                ) as Long
+    
+   Dim pWindow As CWindow Ptr = AfxCWindowPtr(pDoc->hWndForm)
+
+   dim as long nPropValue
+   dim as CWSTR wszPropName, wszPropValue
+
+   wszPropName  = pProp->wszPropName
+   wszPropValue = pProp->wszPropValue
+   nPropValue   = Val(pProp->wszPropValue)
+   
+   select CASE ucase(wszPropName)
+      
+   case "BACKCOLOR"
+      dim as COLORREF clrBack = GetRGBColorFromProperty(pProp)
+      MonthCal_SetColor( pCtrl->hWindow, MCSC_BACKGROUND, clrBack )
+   
+   case "WEEKNUMBERS"
+      if wszPropValue = "True" then
+         AfxAddWindowStyle(pCtrl->hWindow, MCS_WEEKNUMBERS)
+      else
+         AfxRemoveWindowStyle(pCtrl->hWindow, MCS_WEEKNUMBERS)
+      end if   
+      AfxRedrawWindow(pCtrl->hWindow) 
+
+   case "TODAYCIRCLE"
+      if wszPropValue = "True" then
+         AfxRemoveWindowStyle(pCtrl->hWindow, MCS_NOTODAYCIRCLE)
+      else
+         AfxAddWindowStyle(pCtrl->hWindow, MCS_NOTODAYCIRCLE)
+      end if   
+      AfxRedrawWindow(pCtrl->hWindow) 
+
+   case "TODAYDATE"
+      if len(trim(wszPropValue)) = 8 then
+         Dim As SYSTEMTIME pst
+         pst.wYear  = val(left(wszPropValue, 4))
+         pst.wMonth = val(mid(wszPropValue, 5, 2))
+         pst.wDay   = val(right(wszPropValue, 2))
+         MonthCal_SetCurSel( pCtrl->hWindow, @pst )
+      end if
+      
+   case "TODAYSELECTOR"
+      if wszPropValue = "True" then
+         AfxRemoveWindowStyle(pCtrl->hWindow, MCS_NOTODAY)
+      else
+         AfxAddWindowStyle(pCtrl->hWindow, MCS_NOTODAY)
+      end if   
+      AfxRedrawWindow(pCtrl->hWindow) 
+
+   case "TRAILINGDATES"
+      if wszPropValue = "True" then
+         AfxRemoveWindowStyle(pCtrl->hWindow, MCS_NOTRAILINGDATES)
+      else
+         AfxAddWindowStyle(pCtrl->hWindow, MCS_NOTRAILINGDATES)
+      end if   
+      AfxRedrawWindow(pCtrl->hWindow) 
+
+   case "SHORTDAYNAMES"
+      if wszPropValue = "True" then
+         AfxAddWindowStyle(pCtrl->hWindow, MCS_SHORTDAYSOFWEEK)
+      else
+         AfxRemoveWindowStyle(pCtrl->hWindow, MCS_SHORTDAYSOFWEEK)
+      end if   
+      AfxRedrawWindow(pCtrl->hWindow) 
+         
+   end select
+   
+   function = 0
+end function
+
+
+' ========================================================================================
+' Apply properties to the DateTimePicker
+' ========================================================================================
+private function DateTimePicker_ApplyProperties( byval pDoc as clsDocument ptr, _
+                                                 byval pCtrl as clsControl ptr, _
+                                                 byval pProp as clsProperty ptr _ 
+                                                 ) as Long
+    
+   Dim pWindow As CWindow Ptr = AfxCWindowPtr(pDoc->hWndForm)
+
+   dim as long nPropValue
+   dim as CWSTR wszPropName, wszPropValue
+
+   wszPropName  = pProp->wszPropName
+   wszPropValue = pProp->wszPropValue
+   nPropValue   = Val(pProp->wszPropValue)
+   
+   select CASE ucase(wszPropName)
+      
+   case "SELECTEDDATE"
+      Dim As SYSTEMTIME pst
+      pst.wYear  = val(left(wszPropValue, 4))
+      pst.wMonth = val(mid(wszPropValue, 5, 2))
+      pst.wDay   = val(right(wszPropValue, 2))
+      dim as CWSTR wszTime = GetControlProperty(pCtrl, "SELECTEDTIME")
+      pst.wHour   = val(left(wszTime, 2))
+      pst.wSecond = val(mid(wszTime, 3, 2))
+      pst.wMinute = val(right(wszTime, 2))
+      DateTime_SetSystemTime( pCtrl->hWindow, GDT_VALID, @pst )
+
+   case "SELECTEDTIME"
+      Dim As SYSTEMTIME pst
+      dim as CWSTR wszDate = GetControlProperty(pCtrl, "SELECTEDDATE")
+      pst.wYear  = val(left(wszDate, 4))
+      pst.wMonth = val(mid(wszDate, 5, 2))
+      pst.wDay   = val(right(wszDate, 2))
+      dim as CWSTR wszTime = GetControlProperty(pCtrl, "SELECTEDTIME")
+      pst.wHour   = val(left(wszPropValue, 2))
+      pst.wSecond = val(mid(wszPropValue, 3, 2))
+      pst.wMinute = val(right(wszPropValue, 2))
+      DateTime_SetSystemTime( pCtrl->hWindow, GDT_VALID, @pst )
+
+   case "FORMATCUSTOM"
+      dim as CWSTR wszDateFormat = GetControlProperty(pCtrl, "DATEFORMAT")
+      if wszDateFormat = "DateTimePickerFormat.CustomFormat" then
+         dim wszCustomFormat as wstring * MAX_PATH = wszPropValue
+         DateTime_SetFormat( pCtrl->hWindow, @wszCustomFormat )      
+      end if
+
+   case "DATEFORMAT"
+      ' Remove any existing format styles
+      AfxRemoveWindowStyle(pCtrl->hWindow, DTS_LONGDATEFORMAT)
+      AfxRemoveWindowStyle(pCtrl->hWindow, DTS_SHORTDATEFORMAT)
+      AfxRemoveWindowStyle(pCtrl->hWindow, DTS_SHORTDATECENTURYFORMAT)
+      AfxRemoveWindowStyle(pCtrl->hWindow, DTS_TIMEFORMAT)
+      dim wszCustomFormat as wstring * MAX_PATH = ""
+      DateTime_SetFormat( pCtrl->hWindow, @wszCustomFormat )      
+      select case wszPropValue
+         case "DateTimePickerFormat.LongDate"
+            AfxAddWindowStyle(pCtrl->hWindow, DTS_LONGDATEFORMAT)
+         case "DateTimePickerFormat.ShortDate"
+            AfxAddWindowStyle(pCtrl->hWindow, DTS_SHORTDATEFORMAT)
+         case "DateTimePickerFormat.ShortDateCentury"
+            AfxAddWindowStyle(pCtrl->hWindow, DTS_SHORTDATECENTURYFORMAT)
+         case "DateTimePickerFormat.TimeFormat"
+            AfxAddWindowStyle(pCtrl->hWindow, DTS_TIMEFORMAT)
+         case "DateTimePickerFormat.CustomFormat"
+            ' do nothing
+      end select
+      AfxRedrawWindow(pCtrl->hWindow) 
+      
+   case "SHOWUPDOWN"
+      ' Apparently this style can not be changed after control creation.      
+      ReCreateToolboxControl( pDoc, pCtrl )
+         
    end select
    
    function = 0
@@ -794,7 +1047,7 @@ public function ApplyControlProperties( byval pDoc as clsDocument ptr, _
          case "NAME"
             if pCtrl->ControlType = CTRL_LISTBOX then
                ListBox_ResetContent(pCtrl->hWindow)
-               ListBox_AddString(pCtrl->hWindow, wszPropValue)
+               ListBox_AddString(pCtrl->hWindow, wszPropValue.sptr)
             END IF
          CASE "LEFT"
             nLeft = nPropValue
@@ -848,18 +1101,24 @@ public function ApplyControlProperties( byval pDoc as clsDocument ptr, _
       ' Only act on properties where the value has changed.
       if pProp->wszPropValue = pProp->wszPropValuePrev then continue for
       select CASE pCtrl->ControlType
-         case CTRL_FORM:       Form_ApplyProperties(pDoc, pCtrl, pProp)
-         case CTRL_BUTTON:     Button_ApplyProperties(pDoc, pCtrl, pProp)
-         case CTRL_LABEL:      Label_ApplyProperties(pDoc, pCtrl, pProp)
-         case CTRL_CHECKBOX:   CheckBox_ApplyProperties(pDoc, pCtrl, pProp)      
-         case CTRL_OPTION:     OptionButton_ApplyProperties(pDoc, pCtrl, pProp)      
-         case CTRL_TEXTBOX:    TextBox_ApplyProperties(pDoc, pCtrl, pProp)
-         case CTRL_RICHEDIT:   TextBox_ApplyProperties(pDoc, pCtrl, pProp)
-         case CTRL_MASKEDEDIT: MaskedEdit_ApplyProperties(pDoc, pCtrl, pProp)      
-         case CTRL_LISTBOX:    ListBox_ApplyProperties(pDoc, pCtrl, pProp)      
-         case CTRL_COMBOBOX:   ComboBox_ApplyProperties(pDoc, pCtrl, pProp)      
-         case CTRL_FRAME:      Frame_ApplyProperties(pDoc, pCtrl, pProp)
-         case CTRL_PICTUREBOX: PictureBox_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_FORM:           Form_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_BUTTON:         Button_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_LABEL:          Label_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_CHECKBOX:       CheckBox_ApplyProperties(pDoc, pCtrl, pProp)      
+         case CTRL_OPTION:         OptionButton_ApplyProperties(pDoc, pCtrl, pProp)      
+         case CTRL_TEXTBOX:        TextBox_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_RICHEDIT:       TextBox_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_MASKEDEDIT:     MaskedEdit_ApplyProperties(pDoc, pCtrl, pProp)      
+         case CTRL_LISTBOX:        ListBox_ApplyProperties(pDoc, pCtrl, pProp)      
+         case CTRL_COMBOBOX:       ComboBox_ApplyProperties(pDoc, pCtrl, pProp)      
+         case CTRL_FRAME:          Frame_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_PICTUREBOX:     PictureBox_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_PROGRESSBAR:    ProgressBar_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_LISTVIEW:       Listview_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_MONTHCALENDAR:  MonthCalendar_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_DATETIMEPICKER: DateTimePicker_ApplyProperties(pDoc, pCtrl, pProp)
+         case CTRL_TABCONTROL
+            ' Tab Control gets recreated as a whole when the properties change. 
          CASE ELSE
       END SELECT
 
@@ -871,7 +1130,12 @@ public function ApplyControlProperties( byval pDoc as clsDocument ptr, _
       pWindow->SetWindowPos( pCtrl->hWindow, 0, nLeft, nTop, nWidth, nHeight, SWP_NOZORDER)
    END IF
    
+   if pCtrl->ControlType = CTRL_TABCONTROL then
+      ReCreateToolboxControl( pDoc, pCtrl )
+   end if
+   
    ' Repaint to ensure that the grab handles draw
+   AfxRedrawWindow(pCtrl->hWindow)
    AfxRedrawWindow(pDoc->hWndFrame)
    AfxRedrawWindow(pDoc->hWndForm)
    AfxRedrawNonClientArea(pDoc->hWndForm) 

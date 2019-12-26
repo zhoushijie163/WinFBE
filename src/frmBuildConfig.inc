@@ -46,7 +46,7 @@ private function frmBuildConfig_LoadBuildListBox( byval hParent as hwnd ) as Lon
 
    ListBox_ResetContent(hList1)
    for i as long = lbound(gConfig.BuildsTemp) to ubound(gConfig.BuildsTemp)
-      ListBox_AddString(hList1, gConfig.BuildsTemp(i).wszDescription)
+      ListBox_AddString(hList1, gConfig.BuildsTemp(i).wszDescription.sptr)
    NEXT
 
    function = 0
@@ -92,7 +92,7 @@ public function frmBuildConfig_LoadBuildComboBox() as Long
 
    ComboBox_ResetContent(HWND_FRMMAIN_COMBOBUILDS)
    for i as long = lbound(gConfig.Builds) to ubound(gConfig.Builds)
-      ComboBox_AddString(HWND_FRMMAIN_COMBOBUILDS, gConfig.Builds(i).wszDescription)
+      ComboBox_AddString(HWND_FRMMAIN_COMBOBUILDS, gConfig.Builds(i).wszDescription.sptr)
    NEXT
 
    ' 1) If project is active then set using the selected build for the project.
@@ -581,16 +581,18 @@ private Function frmBuildConfig_OnCommand( ByVal HWnd As HWnd, _
             erase gConfig.BuildsTemp
             
             ' Set the active project or the active document to the selected build
-            if nCurSel = -1 THEN exit function
-            If gApp.IsProjectActive Then
-               gApp.ProjectBuild = gConfig.Builds(nCurSel).Id
-            Else
-               Dim pDocMain As clsDocument Ptr 
-               pDocMain = gTTabCtl.GetActiveDocumentPtr()
-               If pDocMain Then pDocMain->DocumentBuild = gConfig.Builds(nCurSel).Id
+            if nCurSel > -1 THEN 
+               If gApp.IsProjectActive Then
+                  gApp.ProjectBuild = gConfig.Builds(nCurSel).Id
+               Else
+                  Dim pDocMain As clsDocument Ptr 
+                  pDocMain = gTTabCtl.GetActiveDocumentPtr()
+                  If pDocMain Then pDocMain->DocumentBuild = gConfig.Builds(nCurSel).Id
+               end if
+               frmBuildConfig_LoadBuildComboBox()
+               frmMain_SetStatusbar
             end if
-            frmBuildConfig_LoadBuildListBox(HWND)
-            frmMain_SetStatusbar
+            
             SendMessage( HWnd, WM_CLOSE, 0, 0 )
             Exit Function
          end if
@@ -751,7 +753,7 @@ public Function frmBuildConfig_Show( ByVal hWndParent As HWnd ) As LRESULT
    ' Load the Compiler Options Listbox
    hCtrl = GetDlgItem(hForm, IDC_FRMBUILDCONFIG_LSTOPTIONS)
    for i as long = lbound(gBuildOptions) to ubound(gBuildOptions)
-      ListBox_AddString(hCtrl, gBuildOptions(i))
+      ListBox_AddString(hCtrl, gBuildOptions(i).sptr)
    next
 
    

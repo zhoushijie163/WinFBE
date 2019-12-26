@@ -1,9 +1,92 @@
-Version 1.9.2
+Version 2.0.2 (December 16, 2019)
+- Fixed: ToolTip needed to have at least 1 character set at design time in order for ToolTip to display at runtime because the hWndToolTip would not be created.
+- Fixed: ListBox code regression in wfxApplication.inc WM_ERASEBKGND handler that caused excessive visual flicker (ControlType.ListBox was accidently set to ControlType.ListView).
+- Fixed: ListView now draws significantly faster becase only affected changed visible line items invoke a redraw of the ListView. Uses ListView_IsItemVisible to determine if item is visible.
+
+Version 2.0.1 (December 13, 2019)
+- Added: Month Calendar control.
+- Added: DateTimePicker control.
+- Added: TabControl control. (still a work in progress but it is currently usable).
+- Added: ToolTip and ToolTipBalloon properties for most controls.
+- Added: New form property called ChildForm. Creates form with WS_CHILD style and is used when specifying child Tab Pages for Tab Control.
+- Changed: Updated German language file as provided by Joerg Buckel.
+- Fixed: ListView Hover event was not removed from the Visual Designer list of selectable methods.
+- Fixed: ListView GPF if number of defined subitems did not match number of defined columns.
+- Fixed: ListView regression whereby mouse clicking on checkbox item was not being recognized.
+- Fixed: ListView GPF if horizontal scroll bar moved to the right and then all columns deleted.
+- Fixed: ListView text property changes were not being immediately displayed (programmer would have to do a manual call to Refresh first).
+- Fixed: Attempting to close an unsaved new file belonging to an open project would not remove the reference to that file from the project.
+- Fixed: Bug whereby switching amongst Forms would cause changed Property values to also follow to the newly selected form and cause that form to show as "dirty" and needing to be saved.
+- Fixed: RichEdit TextAlign property not showing a list of valid choices.
+
+Version 2.0.0 (November 21, 2019)
+- Added: New Project template options: None; Blank Document; Visual Designer; Console; Windows DLL; Static Library.
+- Added: ListView sort (ascending or descending) by a specified SubItem column index. ListView.Items.SortByColumn( nSortColumn, bSortAscend ).
+- Added: ListView Click event now sets e.KeyChar = 13, e.KeyCode = VK_RETURN, whenever ENTER is pressed on a selected row.
+- Fixed: ListView would "automatically" select the row under the cursor even if you don't click on it. Fix required removing the ListView MouseHover event.
+- Fixed: "Open Templates" menu option was disabled if no file/project was already opened.
+- Fixed: Removed extra separator bar between the "Replace" and "Goto Line" top menu items.
+
+Version 1.9.9 (November 17, 2019)
+- Added: New method Form.ShowChild allows displaying a Form as a child (WS_CHILD). This allows forms to act like child panel controls.
+- Added: ListView DoubleClick, RightClick events.
+- Added: ListView Click event will now also fire if ENTER is pressed on a ListView line.
+- Changed: ListView Columns.Add now only requires Text parameter with Width (default 100 pixels) and Alignment (TextAlignment.Left) being optional.
+- Fixed: ListView Click event was not returning correct e.ListViewRow, e.ListViewColumn values.
+- Fixed: When items are insert/remove from ListView/ListBox/ComboBox then their Index properties are now updated to accurately reflect their new position within the collections.
+- Fixed: Bug in Replace All whereby start search position was incremented by length of the find phrase rather than the replace phrase.
+- Fixed: Compile would fail if RichEdit exists in a project but no TextBoxes also exist in the project.
+
+Version 1.9.8 (November 7, 2019)
+- Added: ListView ItemSelectionChanged event.
+- Added: ListView ColumnClick event.
+- Added: ListView.BeginUpdate and ListView.EndUpdate for situations when adding many items during a bulk add.
+- Added: ListViewRow, ListViewColumn to the e EventArgs passed to certain ListView event handlers.
+- Added: Code to manipulate ListView Columns Text, Width, Alignment, Add, Insert, Remove, Clear for situations outside of the Form's Initialize event.
+- Fixed: Much faster deallocation of memory for large collections of items for controls like ListView and ListBox.
+- Fixed: ListView Click event now only fires once rather then three times when fired.
+- Fixed: freebasic_keywords.txt to remove duplicate entries (thanks cbruce).
+- Fixed: Regression fixed whereby compile would fail for source code files that have spaces in their full path filename. However, the problem still persists if your WinFBE installation folder contains spaces. Install WinFBE to locations with folder paths containing no spaces until a permanent fix can be found for this problem.
+
+Version 1.9.7 (November 2, 2019)
+- Fixed: ListView notifications (Events) failing on 64 bit compiles.
+- Fixed: Added back several missing Codetip popup items for the ListView.
+
+Version 1.9.6 (November 2, 2019)
+- Added: ListView HitTest method. Determines what (if any) ListView Item and/or SubItem has been clicked on. HitTest( iItem, iSubItem )
+- Fixed: Removed "TextChanged" event from the ListView.
+- Fixed: ListView Events were not firing due to missing integration code.
+
+Version 1.9.5 (November 1, 2019)
+- Added: ListView control.
+- Added: Visual designer projects create WinFBE_VD_MAIN.bas that contains EQUATES to activate all controls that are present in the project. This helps reduce EXE size.
+- Added: ListBox Insert method.
+- Changed: Remove the Visual Designer sample project (a new one will be added in the future).
+- Fixed: WinFBE project files for the those found in the "Sample_Projects" folder.
+
+Version 1.9.4 (October 1, 2019)
+- Fixed: Updated the WinFBE.ini file to correct path to compiler.
+- Fixed: Removed the Tool UPX.
+- Fixed: Created a SetCompilerSwitches.ini configuration file for the SetCompilerSwitches Tool.
+
+Version 1.9.3 (September 30, 2019)
+- Changed: Updated WinFBE source code to be FB 1.07.1 compatible. WinFBE32.exe and WinFBE64.exe compiled using FB 1.07.1-gcc-5.2.
+- Changed: Updated Italian language translation file thanks to Massimiliano.
+- Changed: Updated German language translation file thanks to Joerg Buckel.
+- Added: Alternate toolchains for gcc versions 8.3 and 9.2. Use the user Tool SetCompilerPathsII to switch between toolchains.
+- Added: Config file is re-read just prior to starting the compiling process. Useful for 3rd party tools that modify the config.
+- Alternate GCC Toolchains for versions 8.3 and 9.2 available as separate downloads.
+- Fixed: For TextBox and RichEdit the default value for CharacterCasing was being set as "CharacterCasing.Normal" when it should have been "CharacterCase.Normal".
+
+Version 1.9.2 (August 25, 2019)
 - CHANGED: TOO MANY VISUAL DESIGNER CHANGES TO LIST
 - Added: Language translation for Brazilian-Portuguese by Marco Pimenta (mvpimenta).
+- Added: "Frac", "Date", "Format" keywords to editor syntax highlighting.
 - Fixed: Controls property "BorderStyle" not correctly set when dynamically applying WindowStyle and WindowExStyle.
 - Fixed: "Visible" property of controls reported the "Enabled" value after control was created.
 - Fixed: Label controls could lose their OwnerDraw abilities if visibility was toggled.
+- Fixed: Changing selected Build Configuration via F7 dialog did not set the correct build in combobox in the main toolbar.
+- Fixed: Random GPF when adding Form files via the "Add Files to Project" menu option. 
 
 Version 1.9.1 (March 25, 2019)
 FYI - (The visual designer is still a work in progress)

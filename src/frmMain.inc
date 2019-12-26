@@ -37,7 +37,7 @@ public Function frmMain_RemoveFromComboFiles( byval pDoc as clsDocument ptr ) As
    
    dim as HWND hComboFiles = GetDlgItem( HWND_FRMMAIN, IDC_FRMMAIN_COMBOFILES )
    dim as long nCount = ComboBox_GetCount( hComboFiles )
-   
+
    for i as long = 0 to nCount - 1
       if ComboBox_GetItemData( hComboFiles, i ) = pDoc then
          ComboBox_DeleteString( hComboFiles, i )
@@ -57,7 +57,7 @@ public Function frmMain_AddToComboFiles( byval pDoc as clsDocument ptr ) As Long
    
    dim as HWND hComboFiles = GetDlgItem( HWND_FRMMAIN, IDC_FRMMAIN_COMBOFILES )
    
-   dim as long idx = ComboBox_AddString( hComboFiles, AfxStrPathname( "NAMEX", pDoc->DiskFilename ) )
+   dim as long idx = ComboBox_AddString( hComboFiles, AfxStrPathname( "NAMEX", pDoc->DiskFilename ).sptr )
    ' Save the pDoc in the itemData in order to quickly load the file later when
    ' selected from the Files combobox.
    ComboBox_SetItemData( hComboFiles, idx, cast(LPARAM, pDoc) )
@@ -123,7 +123,7 @@ public Function frmMain_SelectComboFiles() As Long
    
    dim as HWND hComboFiles = GetDlgItem( HWND_FRMMAIN, IDC_FRMMAIN_COMBOFILES )
    dim as CWSTR wszFilename = AfxStrPathname( "NAMEX", pDoc->DiskFilename )
-   dim as long idx = ComboBox_FindStringExact( hComboFiles, -1, wszFilename )
+   dim as long idx = ComboBox_FindStringExact( hComboFiles, -1, wszFilename.sptr )
    ComboBox_SetCurSel( hComboFiles, idx )
    
    function = 0
@@ -340,7 +340,6 @@ public Function frmMain_SetStatusbar() as long
 
    ' Update the statusbar with the current Line/Col position
    Dim pDoc As clsDocument Ptr = gTTabCtl.GetActiveDocumentPtr()
-   
    
    dim wszText as wstring * MAX_PATH
 
@@ -827,7 +826,7 @@ public Function frmMain_PositionWindows() As LRESULT
    if pWindow = 0 then exit function
    
    Dim pDoc As clsDocument Ptr = gTTabCtl.GetActiveDocumentPtr()
-
+   
    ' Get the entire client area
    GetClientRect( HWND_FRMMAIN, @rc )
   
@@ -955,7 +954,12 @@ public Function frmMain_PositionWindows() As LRESULT
                        rcClient.left, rcClient.top, _
                        rcClient.right, rcClient.bottom - rcClient.top - nDesignCodeTabHeight, _
                        lStyle )
+
+         ' Display the ToolBox/PropertyList
+         frmVDToolbox_Show( HWND_FRMMAIN, SW_SHOW )
+         DisplayPropertyList( pDoc )
          ShowWindow( HWND_FRMVDTOOLBOX, SW_SHOWNORMAL )
+
          ShowWindow( pDoc->hWindow(0), SW_HIDE )
          ShowWindow( pDoc->hWindow(1), SW_HIDE )
          ShowWindow( pDoc->hScrollbar, SW_HIDE )
@@ -1105,9 +1109,11 @@ public Function frmMain_OpenFileSafely( ByVal HWnd        As HWnd, _
    End If   
    pwszName = @pDoc->DiskFilename
 
+   
    ' Add the document to the Explorer treeview and ensure that the root and special
    ' nodes are created.
    AddFunctionsToExplorerTreeview( pDoc, False )
+
 
    ' Set the default build configuration for this document. If no IsDefault option
    ' has been checked then we simply use whatever the current selected build is.
@@ -1134,6 +1140,13 @@ public Function frmMain_OpenFileSafely( ByVal HWnd        As HWnd, _
       Treeview_SelectItem( GetDlgItem(HWND_FRMEXPLORER, IDC_FRMEXPLORER_TREE), _
                            pDoc->hNodeExplorer )
    End If
+
+   ' If a Menu, ToolBar or StatusBar exists on the Form then ensure that it
+   ' resizes to the new Form width.
+   frmMenuEditor_CreateFakeMainMenu(pDoc)
+   frmToolBarEditor_CreateFakeToolBar(pDoc)
+   frmStatusBarEditor_CreateFakeStatusBar(pDoc)
+
 
    ' Position all of the controls into place
    frmMain_PositionWindows
@@ -1888,6 +1901,10 @@ private Function frmMain_OnCommand( ByVal HWnd As HWnd, _
          frmMenuEditor_Show( HWND )
          if pDoc then frmMenuEditor_CreateFakeMainMenu( pDoc )
 
+      case IDM_TOOLBAREDITOR            
+         frmToolBarEditor_Show( HWND )
+         if pDoc then frmToolBarEditor_CreateFakeToolBar( pDoc )
+
       case IDM_STATUSBAREDITOR            
          frmStatusBarEditor_Show( HWND )
          if pDoc then frmStatusBarEditor_CreateFakeStatusBar( pDoc )
@@ -1913,6 +1930,7 @@ private Function frmMain_OnCommand( ByVal HWnd As HWnd, _
          if pDoc then 
             pDoc->bSnapLines = not pDoc->bSnapLines
             pDoc->UserModified = true
+            frmMain_SetStatusbar
          end if
 
       case IDM_LOCKCONTROLS
@@ -2116,6 +2134,7 @@ private Function frmMain_OnActivateApp( ByVal HWnd As HWnd, _
                                         ByVal fActivate As BOOLEAN, _
                                         ByVal dwThreadId As DWORD _
                                         ) As LRESULT
+
    Dim pDoc As clsDocument Ptr
    
    ' If the application is losing focus then validate any currently editing property
@@ -2125,6 +2144,7 @@ private Function frmMain_OnActivateApp( ByVal HWnd As HWnd, _
       DisplayPropertyList(pDoc)
       exit function
    end if
+
       
    static bInActivateApp as Boolean
    if bInActivateApp then exit function
@@ -2997,7 +3017,7 @@ public Function frmMain_Show( ByVal hWndParent As HWnd ) as LRESULT
    ' Add the top tabcontrol (initially not visible)
    gTTabCtl.hWindow = pWindow->AddControl("TABCONTROL", pWindow->hWindow, _
       IDC_FRMMAIN_TOPTABCONTROL, "", 0, 0, 0, 24, _
-      WS_CHILD Or WS_TABSTOP Or TCS_SINGLELINE Or TCS_RAGGEDRIGHT Or TCS_HOTTRACK Or _
+      WS_CHILD Or TCS_SINGLELINE Or TCS_RAGGEDRIGHT Or TCS_HOTTRACK Or _
       TCS_TABS Or TCS_FOCUSNEVER Or TCS_FORCEICONLEFT, WS_EX_LEFT Or WS_EX_LTRREADING, , _
       Cast(SUBCLASSPROC, @frmMain_TabCtl_SubclassProc), IDC_FRMMAIN_TOPTABCONTROL, Cast(DWORD_PTR, @pWindow))
     

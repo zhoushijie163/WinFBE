@@ -44,7 +44,7 @@ Using Afx
 
 #Define APPNAME        WStr("WinFBE - FreeBASIC Editor")
 #Define APPNAMESHORT   WStr("WinFBE")
-#Define APPVERSION     WStr("1.9.1") 
+#Define APPVERSION     WStr("2.0.2") 
 #Define APPCOPYRIGHT   WStr("Paul Squires, PlanetSquires Software, Copyright (C) 2016-2019") 
 
 
@@ -88,13 +88,13 @@ dim shared gLasso   as clsLasso
 #Include Once "clsApp.inc"
 #Include Once "clsTopTabCtl.inc"
 #Include Once "clsLasso.inc"
+#Include Once "modVDDesignFrame.inc"
 #Include Once "modVDRoutines.inc"
 #Include Once "modVDProperties.inc"
 #Include Once "modVDApplyProperties.inc"
 #Include Once "modVDColors.inc"
 #Include Once "modVDControls.inc"
 #Include Once "modVDDesignForm.inc"
-#Include Once "modVDDesignFrame.inc"
 #Include Once "modVDDesignMain.inc"
 #Include Once "modVDToolbox.inc"
 #Include Once "modAutoInsert.inc"
@@ -105,6 +105,7 @@ dim shared gLasso   as clsLasso
 #Include Once "modCodetips.inc"
 #Include Once "modGenerateCode.inc"
 
+#Include Once "frmVDTabChild.inc"
 #Include Once "frmAbout.inc" 
 #Include Once "frmImageManager.inc" 
 #Include Once "frmRecent.inc" 
@@ -129,6 +130,7 @@ dim shared gLasso   as clsLasso
 #Include Once "frmProjectOptions.inc"
 #Include Once "frmHelpViewer.inc"
 #Include Once "frmMenuEditor.inc"
+#Include Once "frmToolBarEditor.inc"
 #Include Once "frmStatusBarEditor.inc"
 #Include Once "frmMainOnCommand.inc"
 #Include Once "frmMain.inc"

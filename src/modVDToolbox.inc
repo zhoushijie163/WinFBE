@@ -13,6 +13,7 @@
 
 #include once "modVDToolbox.bi"
 #include once "frmImageManager.bi"
+#include once "frmVDTabChild.bi"
 #include once "clsApp.bi"
 #include once "clsDocument.bi"
 
@@ -47,11 +48,18 @@ private function LoadPropertyComboListbox( byval pDoc as clsDocument ptr, _
             pCtrl = pDoc->Controls.ItemAt(i)
             if pCtrl then
                if pCtrl->ControlType = CTRL_BUTTON then
-                  ListBox_AddString(HWND_PROPLIST_COMBOLIST, GetControlProperty(pCtrl, "NAME"))
+                  ListBox_AddString(HWND_PROPLIST_COMBOLIST, GetControlProperty(pCtrl, "NAME").sptr)
                end if
             END if
          NEXT
          
+      case "BACKGROUNDIMAGELAYOUT"
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageLayout.None"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageLayout.Tile"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageLayout.Center"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageLayout.Stretch"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageLayout.Zoom"))
+
       CASE "BORDERSTYLE"
          select case pCtrl->ControlType
             case CTRL_FORM
@@ -78,6 +86,23 @@ private function LoadPropertyComboListbox( byval pDoc as clsDocument ptr, _
          ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("CheckBoxState.Unchecked"))
          ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("CheckBoxState.Indeterminate"))
 
+      case "DATEFORMAT"
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("DateTimePickerFormat.LongDate"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("DateTimePickerFormat.ShortDate"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("DateTimePickerFormat.ShortDateCentury"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("DateTimePickerFormat.TimeFormat"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("DateTimePickerFormat.CustomFormat"))
+
+      CASE "HEADERSTYLE"
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ColumnHeaderStyle.Clickable"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ColumnHeaderStyle.NonClickable"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ColumnHeaderStyle.None"))
+
+      case "DROPDOWNSTYLE"
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ComboBoxStyle.Simple"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ComboBoxStyle.DropDown"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ComboBoxStyle.DropDownList"))
+
       case "IMAGESCALING"
          ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageScale.None"))
          ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageScale.AutoSize"))
@@ -85,16 +110,11 @@ private function LoadPropertyComboListbox( byval pDoc as clsDocument ptr, _
          ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageScale.FitHeight"))
          ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageScale.Stretch"))
 
-      case "DROPDOWNSTYLE"
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ComboBoxStyle.Simple"))
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ComboBoxStyle.DropDown"))
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ComboBoxStyle.DropDownList"))
-
-      case "TEXTSCROLLBARS"
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ScrollBars.None"))
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ScrollBars.Horizontal"))
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ScrollBars.Vertical"))
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ScrollBars.Both"))
+      CASE "TABIMAGESIZE"
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ControlImageSize.Size16"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ControlImageSize.Size24"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ControlImageSize.Size32"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ControlImageSize.Size48"))
 
       CASE "STARTPOSITION"
          ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("FormStartPosition.CenterParent"))
@@ -108,17 +128,10 @@ private function LoadPropertyComboListbox( byval pDoc as clsDocument ptr, _
          ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ListSelectionMode.MultiSimple"))
          ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ListSelectionMode.MultiExtended"))
 
-      case "WINDOWSTATE"
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("FormWindowState.Maximized"))
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("FormWindowState.Minimized"))
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("FormWindowState.Normal"))
-
-      case "BACKGROUNDIMAGELAYOUT"
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageLayout.None"))
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageLayout.Tile"))
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageLayout.Center"))
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageLayout.Stretch"))
-         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ImageLayout.Zoom"))
+      CASE "SORTING"
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("SortOrder.Ascending"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("SortOrder.Descending"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("SortOrder.None"))
 
       case "TEXTALIGN"
          select case pCtrl->ControlType
@@ -142,11 +155,23 @@ private function LoadPropertyComboListbox( byval pDoc as clsDocument ptr, _
                ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("LabelAlignment.TopCenter"))
                ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("LabelAlignment.TopLeft"))
                ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("LabelAlignment.TopRight"))
-            case CTRL_TEXTBOX
+            case CTRL_TEXTBOX, CTRL_RICHEDIT
                ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("TextAlignment.Left"))
                ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("TextAlignment.Right"))
                ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("TextAlignment.Center"))
          end select
+
+      case "TEXTSCROLLBARS"
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ScrollBars.None"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ScrollBars.Horizontal"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ScrollBars.Vertical"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("ScrollBars.Both"))
+
+      case "WINDOWSTATE"
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("FormWindowState.Maximized"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("FormWindowState.Minimized"))
+         ListBox_AddString(HWND_PROPLIST_COMBOLIST, @wstr("FormWindowState.Normal"))
+
    END SELECT
 
    function = 0
@@ -198,25 +223,26 @@ private Function ShowDefaultPropertyForControl( byval pCtrl as clsControl ptr ) 
       case CTRL_TEXTBOX, CTRL_MASKEDEDIT, CTRL_RICHEDIT
          wszDefaultProp  = "Text" 
          wszDefaultEvent = "KeyPress" 
-      case CTRL_LISTBOX, CTRL_COMBOBOX
+      case CTRL_LISTBOX, CTRL_COMBOBOX, CTRL_PROGRESSBAR, _
+           CTRL_LISTVIEW, CTRL_TREEVIEW, CTRL_MONTHCALENDAR, _
+           CTRL_DATETIMEPICKER
          wszDefaultProp  = "Name" 
          wszDefaultEvent = "Click" 
       case CTRL_PICTUREBOX
          wszDefaultProp  = "Image" 
          wszDefaultEvent = "Click" 
+      case CTRL_TABCONTROL   
+         wszDefaultProp  = "Name" 
+         wszDefaultEvent = "Selected" 
+
    
 ' TODO: Set default property/event for each control.
    '   CTRL_HSCROLL
    '   CTRL_VSCROLL
    '   CTRL_TIMER
-   '   CTRL_TABCONTROL
    '   CTRL_PROGRESSBAR
    '   CTRL_UPDOWN
-   '   CTRL_LISTVIEW
-   '   CTRL_TREEVIEW
    '   CTRL_SLIDER
-   '   CTRL_DATETIMEPICKER
-   '   CTRL_MONTHCALENDAR
    '   CTRL_WEBBROWSER
    '   CTRL_CUSTOM
    '   CTRL_OCX
@@ -271,6 +297,9 @@ public Function DisplayPropertyList( byval pDoc as clsDocument ptr ) as Long
 
    dim as long idx, nCurSel
 
+   ' Hide any active textboxes, dropdowns, etc
+   HidePropertyListControls
+   
    ' Always clear the controls combobox and repopuplate it. Do this even
    ' if the active control has not changed. It is possible that that a 
    ' group of controls may have been deleted.
@@ -280,7 +309,7 @@ public Function DisplayPropertyList( byval pDoc as clsDocument ptr ) as Long
    for i as long = pDoc->Controls.ItemFirst to pDoc->Controls.ItemLast
       pCtrl = pDoc->Controls.ItemAt(i)
       if pCtrl then
-         idx = Combobox_AddString(hCombo, GetControlProperty(pCtrl, "NAME"))
+         idx = Combobox_AddString(hCombo, GetControlProperty(pCtrl, "NAME").sptr)
          Combobox_SetItemData(hCombo, idx, i)   ' store array index in combobox item
       END if
    NEXT
@@ -313,19 +342,16 @@ public Function DisplayPropertyList( byval pDoc as clsDocument ptr ) as Long
    dim as CWSTR wszPropName
    
    for i as long = lbound(pCtrlActive->Properties) to ubound(pCtrlActive->Properties)
-      ' There are some properties that are only used internally within the designer
-      ' and we don't want to display them in the designer itself.
       wszPropName = pCtrlActive->Properties(i).wszPropName
       select case ucase(wszPropName)
          case "NAME" ' ensure it sorts to first position
-            wszPropName = "_" & wszPropName
-         CASE "STYLE", "EXSTYLE"
-            continue for
+            wszPropName = "  " & wszPropName
+         case "(CUSTOM)" ' ensure it sorts after the first position
+            wszPropName = " Z" & wszPropName
       END SELECT
 
-      idx = Listbox_AddString(hList, wszPropName)
+      idx = Listbox_AddString(hList, wszPropName.sptr)
       ListBox_SetItemData(hList, idx, i)   ' store array index in listbox item
-
    NEXT
 
    ' clear the listbox (EVENTS)
@@ -334,7 +360,7 @@ public Function DisplayPropertyList( byval pDoc as clsDocument ptr ) as Long
    ' Iterate through all events and add them to the listbox
    for i as long = lbound(pCtrlActive->Events) to ubound(pCtrlActive->Events)
       dim as CWSTR wszBlank = ""
-      idx = Listbox_AddString(hList, wszBlank)
+      idx = Listbox_AddString(hList, wszBlank.sptr)
       ListBox_SetItemData(hList, idx, i)   ' store array index in listbox item
    NEXT
 
@@ -383,6 +409,10 @@ private function InitiatePropertyValueChange() as Long
             wszValue = AfxGetListBoxText(HWND_PROPLIST_COMBOLIST, ListBox_GetCurSel(HWND_PROPLIST_COMBOLIST) )
          case PropertyType.ImagePicker
             ' Image changes are never handled here. They are dealt with when the popup Image Manager dialog
+            ' closes. Exit out of this function now otherwise the property value will be deleted.
+            exit function
+         case PropertyType.CustomDialog
+            ' Custom changes are never handled here. They are dealt with when the popup custom dialog
             ' closes. Exit out of this function now otherwise the property value will be deleted.
             exit function
          case PropertyType.FontPicker
@@ -598,11 +628,11 @@ private function ShowPropertyListControl() as Long
          LoadPropertyComboListbox(pDoc, pCtrl, @pCtrl->Properties(nItemData))
          ' Set the active line based on the current stored value for the property
          dim as long nCurSel = ListBox_FindStringExact(HWND_PROPLIST_COMBOLIST, -1, _
-                                                       pCtrl->Properties(nItemData).wszPropValue)
+                                                       pCtrl->Properties(nItemData).wszPropValue.sptr)
          if nCurSel = -1 then
             pCtrl->Properties(nItemData).wszPropValue = pCtrl->Properties(nItemData).wszPropDefault
             nCurSel = ListBox_FindStringExact( HWND_PROPLIST_COMBOLIST, -1, _
-                                               pCtrl->Properties(nItemData).wszPropValue)
+                                               pCtrl->Properties(nItemData).wszPropValue.sptr)
          END IF
          ListBox_SetCurSel(HWND_PROPLIST_COMBOLIST, nCurSel)
          ' Calculate height of the Listbox
@@ -625,7 +655,9 @@ private function ShowPropertyListControl() as Long
          MapWindowPoints(0, hList, cast(POINT ptr, @pt), 1)                    
          If PtInRect(@rcLine, pt) then ShowWindow(HWND_PROPLIST_COMBOLIST, SW_SHOW)
 
-      CASE PropertyType.FontPicker, PropertyType.ImagePicker
+      CASE PropertyType.FontPicker, _
+           PropertyType.ImagePicker, _
+           PropertyType.CustomDialog
          rc.left = rc.right - (rc.bottom-rc.top)
          SetWindowPos(HWND_PROPLIST_COMBO, HWND_TOP, rc.left, rc.top, _
                              rc.right-rc.left, rc.bottom-rc.top, SWP_SHOWWINDOW)
@@ -949,7 +981,7 @@ private Function frmVDToolbox_OnDrawItem( ByVal HWnd As HWnd, _
             end if          
          end if
 
-         
+
          ' PROPERTYLIST
          if lpdis->CtlID = IDC_FRMVDTOOLBOX_LSTPROPERTIES then
             dim pDoc as clsDocument ptr = gTTabCtl.GetActiveDocumentPtr
@@ -978,9 +1010,21 @@ private Function frmVDToolbox_OnDrawItem( ByVal HWnd As HWnd, _
                   FillRect(lpdis->hDC, @rc, hBrush)  
                   rc.left = rc.left + pWindow->ScaleX(4)
 
-
+                  
+                  dim as CWSTR wszPropName, wszPropValue
+                  dim as PropertyType nPropType 
+                  
+                  if (lpdis->itemData >= lbound(pCtrl->Properties)) and _
+                     (lpdis->itemData <= ubound(pCtrl->Properties)) then
+                     wszPropName  = pCtrl->Properties(lpdis->itemData).wszPropName
+                     wszPropValue = pCtrl->Properties(lpdis->itemData).wszPropValue
+                     nPropType    = pCtrl->Properties(lpdis->itemData).PropType
+                  else   
+                     exit function
+                  end if   
+                  
                   DrawText( lpdis->hDC, _
-                            pCtrl->Properties(lpdis->itemData).wszPropName, _
+                            wszPropName, _
                             -1, Cast(lpRect, @rc), _
                             DT_LEFT Or DT_SINGLELINE Or DT_VCENTER )
 
@@ -993,14 +1037,18 @@ private Function frmVDToolbox_OnDrawItem( ByVal HWnd As HWnd, _
                   rc2.left = rc2.left + pWindow->ScaleX(4)
                    
                   ' Some properties that are blank will show "(none)"
-                  dim as CWSTR wszPropValue = pCtrl->Properties(lpdis->itemData).wszPropValue
                   if len(wszPropValue) = 0 then
-                     select case ucase(pCtrl->Properties(lpdis->itemData).wszPropName)
+                     select case ucase(wszPropName)
                         CASE "ACCEPTBUTTON", "BACKGROUNDIMAGE", "CANCELBUTTON", "ICON", "IMAGE"
                            wszPropValue = "(none)"
                      END SELECT
                   end if   
-                  if ucase(pCtrl->Properties(lpdis->itemData).wszPropName) = "FONT" then
+                  
+                  if ucase(wszPropName) = "(CUSTOM)" then
+                     wszPropValue = ""  ' Ensure that nothing displays for the property value
+                  end if
+                  
+                  if ucase(wszPropName) = "FONT" then
                      dim as LOGFONT lf
                      GetObject(hFontNormal, sizeof(lf), @lf)
                      dim as CWSTR wszFaceName = lf.lfFaceName
@@ -1016,20 +1064,21 @@ private Function frmVDToolbox_OnDrawItem( ByVal HWnd As HWnd, _
                                             AfxStrParse(wszPropValue, 2, ",") & "pt"
                      wszPropValue = wszFont
                   end if
-                  if pCtrl->Properties(lpdis->itemData).PropType = PropertyType.ColorPicker then
+                  
+                  if nPropType = PropertyType.ColorPicker then
                      dim as CWSTR wszList, wszValue
                      wszList = AfxStrParse(wszPropValue, 1, "|")
                      wszValue = AfxStrParse(wszPropValue, 2, "|")
                      wszPropValue = wszValue
                      if wszList = "CUSTOM" then wszPropValue = "Custom Color"
-                       
+                        
                      dim as HBRUSH hBrushColor, hBrushOld
                      dim as RECT rcColor = rc2
                      rcColor.left   = rcColor.left 
                      rcColor.right  = rcColor.left + pWindow->ScaleX(18)
                      rcColor.top    = rcColor.top + pWindow->ScaleY(1)
                      rcColor.bottom = rcColor.bottom - pWindow->ScaleY(4)
-                       
+                        
                      dim as COLORREF rgbClr = GetRGBColorFromProperty(@pCtrl->Properties(lpdis->itemData))
                      hBrushColor = CreateSolidBrush(rgbClr)
 
@@ -1059,7 +1108,6 @@ private Function frmVDToolbox_OnDrawItem( ByVal HWnd As HWnd, _
                end if
             END IF
          end if
-
           
          ' EVENTS ASSOCIATED WITH A CONTROL
          if lpdis->CtlID = IDC_FRMVDTOOLBOX_LSTEVENTS then
@@ -1170,6 +1218,9 @@ private Function frmVDToolbox_ListBox_SubclassProc ( _
                      pDoc->bRegenerateCode = true
                      frmMain_SetStatusbar
                      PostMessage(HWND_FRMVDCOLORS, WM_ACTIVATE, WA_INACTIVE, 0)  ' to apply properties
+                  elseif pProp->PropType = PropertyType.CustomDialog then
+                     ' Show the Custom dialog for this control
+                     frmVDTabChild_Show(HWND_FRMMAIN, pProp->wszPropValue)
                   elseif pProp->PropType = PropertyType.ImagePicker then
                      frmImageManager_Show(HWND_FRMMAIN, pProp)
                   elseif pProp->PropType = PropertyType.ColorPicker then
@@ -1190,8 +1241,8 @@ private Function frmVDToolbox_ListBox_SubclassProc ( _
          END IF
          if loword(wParam) = IDC_FRMVDTOOLBOX_COMBOLIST then
             if (hiword(wParam) = LBN_SELCHANGE) then
-               InitiatePropertyValueChange
                ShowWindow(HWND_PROPLIST_COMBOLIST, SW_HIDE)
+               InitiatePropertyValueChange
             end if
          END IF
             
@@ -1360,11 +1411,11 @@ End Function
 ' ========================================================================================
 ' frmVDToolbox Window procedure
 ' ========================================================================================
-private Function frmVDToolbox_SUBCLASSPROC( ByVal HWnd   As HWnd, _
-                                            ByVal uMsg   As UINT, _
-                                            ByVal wParam As WPARAM, _
-                                            ByVal lParam As LPARAM _
-                                            ) As LRESULT
+private Function frmVDToolbox_WndProc( ByVal HWnd   As HWnd, _
+                                       ByVal uMsg   As UINT, _
+                                       ByVal wParam As WPARAM, _
+                                       ByVal lParam As LPARAM _
+                                       ) As LRESULT
 
    Select Case uMsg
       HANDLE_MSG (HWnd, WM_COMMAND,     frmVDToolbox_OnCommand)
@@ -1374,13 +1425,6 @@ private Function frmVDToolbox_SUBCLASSPROC( ByVal HWnd   As HWnd, _
       HANDLE_MSG (HWnd, WM_DESTROY,     frmVDToolbox_OnDestroy)
       HANDLE_MSG (HWnd, WM_MEASUREITEM, frmVDToolbox_OnMeasureItem)
       HANDLE_MSG (HWnd, WM_DRAWITEM,    frmVDToolbox_OnDrawItem)
-
-      case WM_ACTIVATE
-         if wParam = WA_INACTIVE then
-            InitiatePropertyValueChange
-            HidePropertyListControls
-         end if 
-
    End Select
 
    ' for messages that we don't deal with
@@ -1418,7 +1462,7 @@ public Function frmVDToolbox_Show( ByVal hWndParent As HWnd, _
    Dim nTop    As Long = (rcWork.Bottom - rcWork.Top - nHeight) / 2
       
    HWND_FRMVDTOOLBOX = _
-   pWindow->Create( hWndParent, L(352,"Toolbox"), @frmVDToolbox_SUBCLASSPROC, nLeft, nTop, 300, nHeight, _
+   pWindow->Create( hWndParent, L(352,"Toolbox"), @frmVDToolbox_WndProc, nLeft, nTop, 300, nHeight, _
         WS_POPUP Or WS_CAPTION or WS_SYSMENU or WS_THICKFRAME or WS_CLIPSIBLINGS Or WS_CLIPCHILDREN, _
         WS_EX_CLIENTEDGE)
    ' We will set our own mouse pointer as needed
@@ -1496,7 +1540,7 @@ public Function frmVDToolbox_Show( ByVal hWndParent As HWnd, _
    ' Add the Tools to the toolbox
    dim as long ndx
    for i as long = lbound(gToolBox) to ubound(gToolBox)
-      ndx = ListBox_AddString(hList1, gToolBox(i).wszToolBoxName)
+      ndx = ListBox_AddString(hList1, gToolBox(i).wszToolBoxName.sptr)
       ListBox_SetItemData(hList1, ndx, i)
    NEXT
    SetActiveToolboxControl(CTRL_POINTER)
